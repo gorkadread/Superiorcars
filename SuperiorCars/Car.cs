@@ -1,39 +1,50 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using System;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using GameStateManagement;
 
 namespace SuperiorCars
 {
-    // ANVÄNDS EJ ÄNNU
     public class Car
     {
-        Texture2D _mCarTexture;
-        int _mCarHeight;
-        int _mCarWidth;
-        protected float _mCarRotation;
-        protected double _mCarScale;
+        static Random rndGen = new Random();
 
-        public Car()
+        public Car(float x, float y)
         {
-            _mCarRotation = 0;
-            _mCarScale = 1.0;
+            X = x;
+            Y = y;
+            IsActive = false;
+            Speed = 0;
+            Rotation = 0;
+            Scale = 1.0;
+            LastProperMove = 0;
+            LastProperDirection = 0;
         }
 
-        public float CarRotation
-        {
-            get { return _mCarRotation; }
-            set { _mCarRotation = value; }
-        }
+        public float X { get; set; }
 
-        public double CarScale
-        {
-            get { return _mCarScale; }
-            set { _mCarScale = value; }
-        }
+        public float Y { get; set; }
 
-        public void CarTexture(Texture2D texture)
-        {
-            using g as Game1;
-            Load
-        }
+        public Texture2D Texture { get; set; }
+
+        public float Rotation { get; set; }
+
+        public int Width { get; set; }
+
+        public int Height { get; set; }
+
+        public double Scale { get; set; }
+
+        public float Speed { get; set; }
+
+        public double LastProperMove { get; set; }
+
+        public int LastProperDirection { get; set; }
+
+        public Vector2 StartPosition { get; set; }
+
+        public bool IsActive { get; private set; }
+
+
     }
 }
