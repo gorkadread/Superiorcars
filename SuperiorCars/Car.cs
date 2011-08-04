@@ -13,13 +13,21 @@ namespace SuperiorCars
         {
             X = x;
             Y = y;
-            IsActive = false;
+            IsActive = true;
             Speed = 0;
+            MaxSpeed = 6;
             Rotation = 0;
             Scale = 1.0;
             LastProperMove = 0;
             LastProperDirection = 0;
         }
+
+        public void Deactivate()
+        {
+            IsActive = false;
+        }
+
+        public string PlayerName { get; set; }
 
         public float X { get; set; }
 
@@ -37,14 +45,15 @@ namespace SuperiorCars
 
         public float Speed { get; set; }
 
+        public float MaxSpeed { get; set; }
+
         public double LastProperMove { get; set; }
 
-        public int LastProperDirection { get; set; }
+        public float LastProperDirection { get; set; }
 
         public Vector2 StartPosition { get; set; }
 
-        public bool IsActive { get; private set; }
-
+        public bool IsActive { get; set; }
 
     }
 }

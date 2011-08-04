@@ -1,6 +1,9 @@
 ﻿#region Using Statements
 
 using System;
+using System.Windows.Forms;
+using FarseerPhysics.Dynamics;
+using FarseerPhysics.Factories;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
@@ -26,16 +29,29 @@ namespace SuperiorCars.Screens
         Camera2d cam = new Camera2d();
         float pauseAlpha;
         InputAction pauseAction;
+        private const float MeterInPixels = 100f;
 
         // Starting positions
         Car playerCar = new Car(300, 150);
         Car enemyCar1 = new Car(300, 200);
+
+        //todo Byt ut playerCar/enemyCar1 mot arrayn Cars
+        static int iMaxCars = 9;
+        Car[] Cars = new Car[iMaxCars];
 
         // Jingles and jazz to determine collision
         RenderTarget2D mTrackRender;
         RenderTarget2D mTrackRenderRotated;
         Texture2D currentTrackOverlay;
         Texture2D currentTrack;
+
+        // Temporary globals
+        bool test;
+
+        // Farseer physics
+        World _currentMapWorld = new World(Vector2.Zero);
+        Body _car1Body;
+        Body _car2Body;
 
         #endregion
 
@@ -52,7 +68,7 @@ namespace SuperiorCars.Screens
 
             pauseAction = new InputAction(
                 new Buttons[] { Buttons.Start, Buttons.Back },
-                new Keys[] { Keys.Escape },
+                new Microsoft.Xna.Framework.Input.Keys[] { Microsoft.Xna.Framework.Input.Keys.Escape },
                 true);
         }
 
@@ -71,12 +87,14 @@ namespace SuperiorCars.Screens
                 currentTrack = content.Load<Texture2D>("Textures/Tracks/Track1");
                 currentTrackOverlay = content.Load<Texture2D>("Textures/Tracks/Track1overlay");
                 playerCar.Texture = content.Load<Texture2D>("Textures/Cars/Car");
+                playerCar.PlayerName = "Tony";
                 enemyCar1.Texture = content.Load<Texture2D>("Textures/Cars/Car");
+                enemyCar1.PlayerName = "Emmy";
 
-                playerCar.Width = (int)(playerCar.Texture.Width * playerCar.Scale);
+                playerCar.Width = (int)(playerCar.Texture.Width * playerCar.Scale); // 70px x 35px => 4480cm x 2240cm
                 playerCar.Height = (int)(playerCar.Texture.Height * playerCar.Scale);
 
-                enemyCar1.Width = (int)(enemyCar1.Texture.Width * enemyCar1.Scale);
+                enemyCar1.Width = (int)(enemyCar1.Texture.Width * enemyCar1.Scale); // 70px x 35px => 4480cm x 2240cm
                 enemyCar1.Height = (int)(enemyCar1.Texture.Height * enemyCar1.Scale);
 
                 //Setup the render targets to be used in determining if the car is on the track
@@ -84,6 +102,19 @@ namespace SuperiorCars.Screens
                        playerCar.Height + 100, false, SurfaceFormat.Color, DepthFormat.None);
                 mTrackRenderRotated = new RenderTarget2D(ScreenManager.GraphicsDevice, playerCar.Width + 100,
                        playerCar.Height + 100, false, SurfaceFormat.Color, DepthFormat.None);
+
+                // Physics
+                _currentMapWorld = new World(Vector2.Zero);
+                _car1Body = BodyFactory.CreateRectangle(_currentMapWorld,playerCar.Width,playerCar.Height,1,new Vector2(playerCar.X,playerCar.Y));
+                _car1Body.BodyType = BodyType.Dynamic;
+                _car1Body.Restitution = 0.3f;
+                _car1Body.Friction = 0.5f;
+                _car2Body = BodyFactory.CreateRectangle(_currentMapWorld,enemyCar1.Width,enemyCar1.Height,1,new Vector2(enemyCar1.X,enemyCar1.Y));
+                _car2Body.BodyType = BodyType.Dynamic;
+                _car2Body.Restitution = 0.3f;
+                _car2Body.Friction = 0.5f;
+
+
 
                 // once the load has finished, we use ResetElapsedTime to tell the game's
                 // timing mechanism that we have just finished a very long frame, and that
@@ -149,11 +180,12 @@ namespace SuperiorCars.Screens
 
             if (IsActive)
             {
-                // Apply some random jitter to make the enemy move around. 
-                const float randomization = 10;
 
-                enemyCar1.X += (float)(random.NextDouble() - 0.5) * randomization;
-                enemyCar1.Y += (float)(random.NextDouble() - 0.5) * randomization;
+                // Apply some random jitter to make the enemy move around. 
+                //const float randomization = 10;
+
+                //enemyCar1.X += (float)(random.NextDouble() - 0.5) * randomization;
+                //enemyCar1.Y += (float)(random.NextDouble() - 0.5) * randomization;
 
                 /* Apply a stabilizing force to stop the enemy moving off the screen.
                 Vector2 targetPosition = new Vector2(
@@ -162,7 +194,8 @@ namespace SuperiorCars.Screens
 
                 mCarPosition = Vector2.Lerp(mCarPosition, targetPosition, 0.05f); */
 
-                
+                //We update the world
+                _currentMapWorld.Step((float)gameTime.ElapsedGameTime.TotalMilliseconds * 0.001f);
             }
         }
 
@@ -200,59 +233,66 @@ namespace SuperiorCars.Screens
             }
             else
             {
+                int carSpeed = 0;
 
                 //Rotate the Car sprite with the Left Thumbstick or the up and down arrows
                 playerCar.Rotation += (float)(gamePadState.ThumbSticks.Left.X * 3.0f * gameTime.ElapsedGameTime.TotalSeconds);
 
                 // Camera zoom
-                if (keyboardState.IsKeyDown(Keys.N)) cam.IncrementZoom(0.1f);
-                if (keyboardState.IsKeyDown(Keys.M)) cam.IncrementZoom(-0.1f);
+                if (keyboardState.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.N)) cam.IncrementZoom(0.1f);
+                if (keyboardState.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.M)) cam.IncrementZoom(-0.1f);
 
-                int aMove = 0;
-
-                if (keyboardState.IsKeyDown(Keys.Up))
+                if (keyboardState.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.Up))
                 {
-                    aMove += (int)(200 * gameTime.ElapsedGameTime.TotalSeconds);
+                    carSpeed += (int)(200 * gameTime.ElapsedGameTime.TotalSeconds);
                 }
-                else if (keyboardState.IsKeyDown(Keys.Down))
+                else if (keyboardState.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.Down))
                 {
-                    aMove -= (int)(100 * gameTime.ElapsedGameTime.TotalSeconds);
+                    carSpeed -= (int)(100 * gameTime.ElapsedGameTime.TotalSeconds);
                 }
 
-                if (keyboardState.IsKeyDown(Keys.Left))
+                if (keyboardState.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.Left))
                 {
-                    playerCar.Rotation -= (aMove * 0.15f) * (float)(1 * 3.0f * gameTime.ElapsedGameTime.TotalSeconds);
+                    playerCar.Rotation -= (playerCar.Speed * 0.15f) * (float)(1 * 3.0f * gameTime.ElapsedGameTime.TotalSeconds);
                 }
-                else if ( keyboardState.IsKeyDown(Keys.Right))
+                else if ( keyboardState.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.Right))
                 {
-                    playerCar.Rotation += (aMove * 0.15f) * (float)(1 * 3.0f * gameTime.ElapsedGameTime.TotalSeconds);
+                    playerCar.Rotation += (playerCar.Speed * 0.15f) * (float)(1 * 3.0f * gameTime.ElapsedGameTime.TotalSeconds);
                 }
 
-                //Check to see if a collision occured. If a collision didn't occur, then move the sprite
-                if (CollisionOccurred(aMove) == false)
+                if (carSpeed > playerCar.MaxSpeed)
+                    playerCar.Speed = playerCar.MaxSpeed;
+                else
+                    playerCar.Speed = carSpeed;
+
+                // Check to see if cars have collided
+                test = CarCollision(playerCar, enemyCar1);
+
+                //Check to see if a collision with offtrack has occured. If a collision didn't occur, then move the sprite
+                if (CollisionOccurred((int)playerCar.Speed) == false)
                 {
                     //Move the sprite
-                    playerCar.X += (float)(aMove * Math.Cos(playerCar.Rotation));
-                    playerCar.Y += (float)(aMove * Math.Sin(playerCar.Rotation));
+                    playerCar.X += (float)(playerCar.Speed * Math.Cos(playerCar.Rotation));
+                    playerCar.Y += (float)(playerCar.Speed * Math.Sin(playerCar.Rotation));
                     playerCar.LastProperMove = gameTime.ElapsedGameTime.TotalMilliseconds;
-                    playerCar.LastProperDirection = aMove;
-
+                    playerCar.LastProperDirection = playerCar.Speed;
                 }
                 else // We have crashed
                 {
+
                     double timeOfCrash = gameTime.ElapsedGameTime.TotalMilliseconds;
                     if (timeOfCrash > playerCar.LastProperMove + 2000 == false)
                     {
                         if (playerCar.LastProperDirection > 0)
-                            aMove += (int) (200 * gameTime.ElapsedGameTime.TotalSeconds)*(int) Math.Floor((float) 0.9);
+                            playerCar.Speed += (int)(200 * gameTime.ElapsedGameTime.TotalSeconds) * (int)Math.Floor((float)0.9);
                         else
-                            aMove -= (int)(200 * gameTime.ElapsedGameTime.TotalSeconds) * (int)Math.Floor((float)0.9);
-                        playerCar.X -= (float)(aMove * Math.Cos(playerCar.Rotation));
-                        playerCar.Y -= (float)(aMove * Math.Sin(playerCar.Rotation));
+                            playerCar.Speed -= (int)(200 * gameTime.ElapsedGameTime.TotalSeconds) * (int)Math.Floor((float)0.9);
+                        playerCar.X -= (float)(playerCar.Speed * Math.Cos(playerCar.Rotation));
+                        playerCar.Y -= (float)(playerCar.Speed * Math.Sin(playerCar.Rotation));
                     }
                 }
                 // TODO Fixa till nedre delen av kameran så den inte visar utanför kartan
-                cam.Pos = new Vector2(MathHelper.Clamp(playerCar.X / 2, currentTrackOverlay.Width / 8, 960), MathHelper.Clamp(playerCar.Y / 2, currentTrackOverlay.Height / 8, currentTrackOverlay.Height - 180)); 
+                cam.Pos = new Vector2(MathHelper.Clamp(playerCar.X / 2, currentTrackOverlay.Width / 8, 960), MathHelper.Clamp(playerCar.Y / 2, currentTrackOverlay.Height / 8, currentTrackOverlay.Height - 180));
             }
         }
 
@@ -288,7 +328,12 @@ namespace SuperiorCars.Screens
                 new Rectangle(0, 0, enemyCar1.Width, enemyCar1.Height), Color.White, enemyCar1.Rotation,
                 new Vector2(enemyCar1.Width / 2, enemyCar1.Height / 2), SpriteEffects.None, 0);
 
+            // If collision between cars occurs
+            //if (test)
+                //spriteBatch.DrawString(gameFont, "COLLISION between " + playerCar.PlayerName + " and " + enemyCar1.PlayerName, new Vector2(10, 10), Color.White);
+
             spriteBatch.End();
+
             //pewpew
             // Since the explosions wants additive, we'll do this last
             //spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.Additive);
@@ -309,6 +354,36 @@ namespace SuperiorCars.Screens
         #endregion
 
         #region Collision Detection methods
+
+        // This method checks if the cars are intersecting with eachothers BUT it does only work on non-rotated images, doh
+        protected bool Intersects(Rectangle rectA, Rectangle rectB)
+        {
+            // Returns True if rectA and rectB contain any overlapping points
+            return (rectA.Right > rectB.Left && rectA.Left < rectB.Right &&
+                    rectA.Bottom > rectB.Top && rectA.Top < rectB.Bottom);
+        }
+
+        private bool CarCollision(Car car1, Car car2)
+        {
+            //Calculate the position of the Cars and create the rectangles.
+            float car1XPosition = (float)(-car1.Width / 2 + car1.X + car1.Speed * Math.Cos(car1.Rotation));
+            float car1YPosition = (float)(-car1.Height / 2 + car1.Y + car1.Speed * Math.Sin(car1.Rotation));
+
+            float car2XPosition = (float)(-car2.Width / 2 + car2.X + car2.Speed * Math.Cos(car2.Rotation));
+            float car2YPosition = (float)(-car2.Height / 2 + car2.Y + car2.Speed * Math.Sin(car2.Rotation));
+
+            Rectangle rCar1 = new Rectangle((int)car1XPosition, (int)car1YPosition, car1.Width,car1.Height);
+            Rectangle rCar2 = new Rectangle((int)car2XPosition, (int)car2YPosition, car2.Width, car2.Height);
+
+            if (Rectangle.Intersect(rCar1, rCar2).IsEmpty)
+                return false;
+            return true;
+        }
+
+        private void CarCrashBox2D()
+        {
+
+        }
 
         //This method checks to see if the Sprite is going to move into an area that does
         //not contain all Gray pixels. If the move amount would cause a movement into a non-gray
@@ -382,6 +457,34 @@ namespace SuperiorCars.Screens
             g.SetRenderTarget(null);
 
             return mTrackRenderRotated;
+        }
+
+        #endregion
+
+        #region custom Methods
+
+        // Används ej
+        protected void showMessageBox()
+        {
+            MessageBox.Show("body", "title", MessageBoxButtons.YesNo);
+            if (MessageBox.Show("body", "title", MessageBoxButtons.YesNo) == DialogResult.Yes)
+            {
+                //code yes
+            }
+            else
+            {
+                //code No
+            }
+        }
+
+        protected void DestroyEnemy(int iEnemy)
+        {
+            Cars[iEnemy].Deactivate();
+        }
+
+        protected void RemoveBullet(int iBullet)
+        {
+            //Rocket[iRocket].IsActive = false;
         }
 
         #endregion
