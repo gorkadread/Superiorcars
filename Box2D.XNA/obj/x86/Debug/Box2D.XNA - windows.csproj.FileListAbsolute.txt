@@ -1,6 +1,0 @@
-C:\Users\Tony\Downloads\box2dxna-62331\Box2D.XNA\bin\x86\Debug\Box2D.XNA.dll
-C:\Users\Tony\Downloads\box2dxna-62331\Box2D.XNA\bin\x86\Debug\Box2D.XNA.pdb
-C:\Users\Tony\Downloads\box2dxna-62331\Box2D.XNA\obj\x86\Debug\ResolveAssemblyReference.cache
-C:\Users\Tony\Downloads\box2dxna-62331\Box2D.XNA\obj\x86\Debug\Microsoft.Xna.Framework.RuntimeProfile.txt
-C:\Users\Tony\Downloads\box2dxna-62331\Box2D.XNA\obj\x86\Debug\Box2D.XNA.dll
-C:\Users\Tony\Downloads\box2dxna-62331\Box2D.XNA\obj\x86\Debug\Box2D.XNA.pdb
